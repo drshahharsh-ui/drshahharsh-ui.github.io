@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robotic Surgery — Adjustment Calculator</title>
+<style>
+  :root {
+    --blue: #1e3a5f; --teal: #0d6e6e; --green: #15803d; --red: #b91c1c;
+    --gold: #92400e; --border: #e2e8f0; --light: #f8fafc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #1e293b; min-height: 100vh; }
+
+  .header { background: linear-gradient(135deg, var(--blue), var(--teal)); color: white; padding: 22px 32px; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+  .main { max-width: 860px; margin: 0 auto; padding: 24px 20px; }
+
+  .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; display: flex; align-items: center; gap: 8px; }
+  .card-body { padding: 20px; }
+
+  /* Input grid */
+  .input-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .input-group { display: flex; flex-direction: column; gap: 12px; }
+  .input-group h3 { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; font-weight: 600; color: #475569; }
+  .field input { border: 1.5px solid var(--border); border-radius: 7px; padding: 9px 12px 9px 28px; font-size: 14px; font-family: monospace; width: 100%; transition: border-color 0.15s; }
+  .field input:focus { outline: none; border-color: var(--teal); }
+  .field-wrap { position: relative; }
+  .field-wrap::before { content: '₹'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #94a3b8; }
+
+  .preset-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .preset-btn { font-size: 11px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 20px; background: white; cursor: pointer; color: #475569; transition: all 0.15s; }
+  .preset-btn:hover { background: #eff6ff; border-color: var(--teal); color: var(--teal); }
+  .preset-btn.active { background: var(--teal); color: white; border-color: var(--teal); }
+
+  .calc-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--blue), var(--teal)); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; margin-top: 4px; transition: opacity 0.15s; }
+  .calc-btn:hover { opacity: 0.9; }
+
+  /* Results */
+  .results { display: none; }
+  .results.show { display: block; }
+
+  .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .strip-cell { background: white; padding: 14px; text-align: center; }
+  .strip-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 600; }
+  .strip-val { font-size: 18px; font-weight: 700; margin-top: 4px; font-family: monospace; }
+
+  .adj-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .adj-table th { background: #f8fafc; padding: 10px 14px; text-align: right; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid var(--border); }
+  .adj-table th:first-child { text-align: left; }
+  .adj-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-family: monospace; text-align: right; }
+  .adj-table td:first-child { font-family: 'Segoe UI', Arial, sans-serif; font-weight: 600; text-align: left; color: #334155; }
+  .adj-table tr:last-child td { border-bottom: none; background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border); }
+  .deduction-cell { color: var(--red); }
+  .final-cell { color: var(--green); font-weight: 700; }
+  .pct-cell { color: #94a3b8; font-size: 11px; }
+
+  /* Copy output */
+  .output-box { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 16px 18px; font-family: 'Courier New', monospace; font-size: 12.5px; line-height: 1.8; white-space: pre; overflow-x: auto; position: relative; }
+  .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.12); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); }
+  .copy-btn.copied { background: #15803d; border-color: #15803d; }
+
+  .billing-note-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px 18px; font-size: 13px; line-height: 1.75; color: #451a03; position: relative; }
+  .copy-btn-light { position: absolute; top: 10px; right: 10px; background: white; color: #475569; border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .copy-btn-light:hover { background: #f1f5f9; }
+  .copy-btn-light.copied { background: #dcfce7; color: #15803d; border-color: #86efac; }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .tag-blue { background: #dbeafe; color: #1d4ed8; }
+  .tag-red { background: #fee2e2; color: #b91c1c; }
+  .tag-green { background: #dcfce7; color: #15803d; }
+
+  .disclaimer { font-size: 11px; color: #94a3b8; text-align: center; padding: 8px 0; }
+
+  @media (max-width: 600px) {
+    .input-section { grid-template-columns: 1fr; }
+    .summary-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Robotic Surgery — Adjustment Calculator</h1>
+  <p></p>
+</div>
+
+<div class="main">
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="card-header">📋 Enter Original Bill Amounts</div>
+    <div class="card-body">
+      <div class="input-section">
+
+        <div class="input-group">
+          <h3>Professional Fees (from Bill PDF)</h3>
+          <div class="field">
+            <label>Surgeon Fee</label>
+            <div class="field-wrap"><input type="number" id="surgeon" placeholder="0" min="0"></div>
+          </div>
+          <div class="field">
+            <label>Assistant Surgeon Fee</label>
+            <div class="field-wrap"><input type="number" id="assistant" placeholder="0" min="0"></div>
+          </div>
+          <div class="field">
+            <label>Anaesthetist Fee</label>
+            <div class="field-wrap"><input type="number" id="anaes" placeholder="0" min="0"></div>
+          </div>
+          <div class="field">
+            <label>OT Charges</label>
+            <div class="field-wrap"><input type="number" id="ot" placeholder="0" min="0"></div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <h3>Robotic Costs (NOT in Bill)</h3>
+          <div class="field">
+            <label>Equipment Charge</label>
+            <div class="field-wrap"><input type="number" id="equipment" placeholder="0" min="0"></div>
+          </div>
+          <div class="field" style="margin-top: 8px;">
+            <label>Robotic Consumables Total</label>
+            <div class="field-wrap"><input type="number" id="consumables" placeholder="0" min="0"></div>
+          </div>
+          <div style="margin-top: 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #78350f; line-height: 1.6;">
+            💡 Enter the exact amounts from the <b>OT Excel sheet</b> provided for this patient. Equipment and consumable rates change — always use the current OT sheet figures.
+          </div>
+        </div>
+
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button class="calc-btn" onclick="calculate()">⚡ Calculate Adjustment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+
+    <!-- Summary strip -->
+    <div class="summary-strip">
+      <div class="strip-cell">
+        <div class="strip-label">Total to Adjust</div>
+        <div class="strip-val" id="r-total-adjust" style="color: var(--red);">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label">4-Party Original Total</div>
+        <div class="strip-val" id="r-four-total">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label">Net Payable (4-Party)</div>
+        <div class="strip-val" id="r-net-total" style="color: var(--green);">—</div>
+      </div>
+      <div class="strip-cell">
+        <div class="strip-label">Surgeon Deduction %</div>
+        <div class="strip-val" id="r-surg-pct" style="color: var(--gold);">—</div>
+      </div>
+    </div>
+
+    <!-- Breakdown table -->
+    <div class="card">
+      <div class="card-header">📊 Adjustment Breakdown</div>
+      <div class="card-body" style="padding: 0;">
+        <table class="adj-table">
+          <thead>
+            <tr>
+              <th>Party</th>
+              <th>Original</th>
+              <th>Share %</th>
+              <th>Deduction</th>
+              <th>Final Payable</th>
+            </tr>
+          </thead>
+          <tbody id="adj-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Copy-paste output -->
+    <div class="card">
+      <div class="card-header">📋 Copy-Paste Format (for Billing)</div>
+      <div class="card-body" style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Excel Format — Copy → Paste directly into Excel (Ctrl+V)</div>
+          <div style="position: relative;">
+            <div class="output-box" id="table-output"></div>
+            <button class="copy-btn" onclick="copyText('table-output', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Billing Department Explanation</div>
+          <div style="position: relative;">
+            <div class="billing-note-box" id="billing-note"></div>
+            <button class="copy-btn-light" onclick="copyText('billing-note', this)">Copy</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="disclaimer">Formula: Final[Party] = Original[Party] − (Original[Party] ÷ 4-Party Total × Total Robotic Cost)</p>
+  </div>
+
+</div>
+
+<script>
+  function fmt(n) {
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+  function fmtNum(n) {
+    return Math.round(n).toLocaleString('en-IN');
+  }
+  function pct(n, total) {
+    return (n / total * 100).toFixed(1) + '%';
+  }
+  function pad(str, len, right) {
+    str = String(str);
+    while (str.length < len) str = right ? str + ' ' : ' ' + str;
+    return str;
+  }
+
+  function calculate() {
+    const surgeon   = parseFloat(document.getElementById('surgeon').value)   || 0;
+    const assistant = parseFloat(document.getElementById('assistant').value) || 0;
+    const anaes     = parseFloat(document.getElementById('anaes').value)     || 0;
+    const ot        = parseFloat(document.getElementById('ot').value)        || 0;
+    const equipment = parseFloat(document.getElementById('equipment').value) || 0;
+    const consumables = parseFloat(document.getElementById('consumables').value) || 0;
+
+    if (surgeon === 0 && assistant === 0 && anaes === 0 && ot === 0) {
+      alert('Please enter at least the professional fee amounts.');
+      return;
+    }
+
+    const fourTotal   = surgeon + assistant + anaes + ot;
+    const totalAdjust = equipment + consumables;
+
+    const deductSurg  = (surgeon   / fourTotal) * totalAdjust;
+    const deductAsst  = (assistant / fourTotal) * totalAdjust;
+    const deductAnaes = (anaes     / fourTotal) * totalAdjust;
+    const deductOT    = (ot        / fourTotal) * totalAdjust;
+
+    const finalSurg  = Math.round(surgeon   - deductSurg);
+    const finalAsst  = Math.round(assistant - deductAsst);
+    const finalAnaes = Math.round(anaes     - deductAnaes);
+    const finalOT    = Math.round(ot        - deductOT);
+    const finalTotal = finalSurg + finalAsst + finalAnaes + finalOT;
+
+    // Summary strip
+    document.getElementById('r-total-adjust').textContent = fmt(totalAdjust);
+    document.getElementById('r-four-total').textContent   = fmt(fourTotal);
+    document.getElementById('r-net-total').textContent    = fmt(finalTotal);
+    document.getElementById('r-surg-pct').textContent     = pct(surgeon, fourTotal);
+
+    // Table
+    const parties = [
+      { name: 'Surgeon',           orig: surgeon,   ded: deductSurg,  fin: finalSurg  },
+      { name: 'Assistant Surgeon', orig: assistant, ded: deductAsst,  fin: finalAsst  },
+      { name: 'Anaesthetist',      orig: anaes,     ded: deductAnaes, fin: finalAnaes },
+      { name: 'OT Charges',        orig: ot,        ded: deductOT,    fin: finalOT    },
+    ];
+
+    let tbody = '';
+    parties.forEach(p => {
+      tbody += `<tr>
+        <td>${p.name}</td>
+        <td>${fmt(p.orig)}</td>
+        <td class="pct-cell">${pct(p.orig, fourTotal)}</td>
+        <td class="deduction-cell">−${fmt(p.ded)}</td>
+        <td class="final-cell">${fmt(p.fin)}</td>
+      </tr>`;
+    });
+    tbody += `<tr>
+      <td>TOTAL</td>
+      <td>${fmt(fourTotal)}</td>
+      <td class="pct-cell">100.0%</td>
+      <td class="deduction-cell">−${fmt(totalAdjust)}</td>
+      <td class="final-cell">${fmt(finalTotal)}</td>
+    </tr>`;
+    document.getElementById('adj-tbody').innerHTML = tbody;
+
+    // Tab-separated table for Excel paste
+    const tab = '\t';
+    const nl  = '\n';
+    let tsv = '';
+    tsv += 'Party'            + tab + 'Original (₹)'  + tab + 'Deduction (₹)' + tab + 'Final Payable (₹)' + nl;
+    parties.forEach(p => {
+      tsv += p.name           + tab + Math.round(p.orig) + tab + Math.round(p.ded) + tab + p.fin + nl;
+    });
+    tsv += 'TOTAL'            + tab + Math.round(fourTotal) + tab + Math.round(totalAdjust) + tab + finalTotal + nl;
+    tsv += nl;
+    tsv += 'Robotic Equipment'   + tab + Math.round(equipment)   + nl;
+    tsv += 'Robotic Consumables' + tab + Math.round(consumables) + nl;
+    tsv += 'Total Robotic Cost'  + tab + Math.round(totalAdjust) + nl;
+
+    document.getElementById('table-output').textContent = tsv;
+
+    // Billing note
+    const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const noteText = `Robotic Surgery — Professional Fee Adjustment 
+
+The cost of robotic surgery equipment and disposables is not included in the patient bill.
+
+As per the approved adjustment formula, the total robotic cost of ${fmt(totalAdjust)} (Equipment: ${fmt(equipment)} + Consumables: ${fmt(consumables)}) has been deducted proportionally from the four professional charges based on each party's share of the combined fee.
+
+Adjusted Payable Amounts:
+  Surgeon Fee          : ${fmt(finalSurg)}  (Original: ${fmt(surgeon)})
+  Assistant Surgeon    : ${fmt(finalAsst)}  (Original: ${fmt(assistant)})
+  Anaesthetist Fee     : ${fmt(finalAnaes)}  (Original: ${fmt(anaes)})
+  OT Charges           : ${fmt(finalOT)}  (Original: ${fmt(ot)})
+  ─────────────────────────────────────
+  Total Net Payable    : ${fmt(finalTotal)}  (Original: ${fmt(fourTotal)})
+
+Please update the billing system with the above adjusted figures. The robotic equipment and consumable line items should NOT appear in the patient bill.
+
+Date: ${today}
+Surgeon:  `;
+
+    document.getElementById('billing-note').textContent = noteText;
+
+    document.getElementById('results').classList.add('show');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function copyText(id, btn) {
+    const el = document.getElementById(id);
+    const text = el.textContent || el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // Allow Enter key to trigger calculation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+</script>
+</body>
+</html>
