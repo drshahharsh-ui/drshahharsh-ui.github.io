@@ -1,0 +1,299 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Surgery Fee Estimator (v3 — generic codes only)</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin:0; background:#f4f6f8; color:#222; }
+header { background: linear-gradient(135deg, #0d4a8a 0%, #1976d2 100%); color:#fff; padding:24px 32px; }
+header h1 { margin:0 0 4px 0; font-size:22px; }
+header .sub { opacity:0.85; font-size:13px; }
+.container { max-width:1280px; margin:0 auto; padding:20px; }
+.layout { display:grid; grid-template-columns: 340px 1fr; gap:18px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.panel { background:#fff; border-radius:10px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.panel h3 { margin:0 0 12px 0; font-size:14px; color:#0d4a8a; }
+label { display:block; font-size:11px; color:#5a6c7d; margin:10px 0 4px 0; font-weight:500; text-transform:uppercase; letter-spacing:0.4px; }
+input, select { width:100%; padding:8px 10px; border:1px solid #cdd5dd; border-radius:6px; font-size:13px; background:#fff; }
+.amt-input { font-size:18px; font-weight:600; color:#0d4a8a; }
+.target-display { background:#e8f0fa; border:2px solid #1976d2; border-radius:8px; padding:14px; text-align:center; margin-top:12px; }
+.target-display .label { font-size:11px; color:#5a6c7d; }
+.target-display .value { font-size:20px; font-weight:600; color:#0d4a8a; }
+.gauge { display:flex; gap:10px; margin:12px 0; }
+.gauge .box { flex:1; padding:10px; border-radius:6px; text-align:center; }
+.gauge .box .label { font-size:10px; opacity:0.8; text-transform:uppercase; }
+.gauge .box .value { font-size:16px; font-weight:600; margin-top:4px; }
+.box-target { background:#e3f2fd; color:#0d4a8a; }
+.box-current { background:#fff8e1; color:#f57f17; }
+.box-gap { background:#fce4ec; color:#c2185b; }
+.box-gap.ok { background:#e8f5e9; color:#2e7d32; }
+.codeRow { padding:10px 12px; border-bottom:1px solid #eef1f5; cursor:pointer; transition:background 0.1s; display:flex; gap:12px; align-items:center; }
+.codeRow:hover { background:#fafbfc; }
+.codeRow.selected { background:#e3f2fd; border-left:3px solid #1976d2; }
+.codeRow .code { font-family: monospace; color:#1976d2; font-weight:600; font-size:12px; min-width:75px; }
+.codeRow .name { flex:1; font-size:13px; }
+.codeRow .price { font-weight:600; color:#0d4a8a; min-width:80px; text-align:right; font-size:13px; }
+.tier-PRIMARY { border-left:3px solid #43a047; }
+.tier-SECONDARY { border-left:3px solid #fb8c00; }
+.tag-tier { font-size:10px; padding:2px 8px; border-radius:10px; margin-left:6px; }
+.tag-PRIMARY { background:#e8f5e9; color:#2e7d32; }
+.tag-SECONDARY { background:#fff3e0; color:#e65100; }
+.code-list { max-height:480px; overflow-y:auto; border:1px solid #eef1f5; border-radius:6px; }
+.selected-row { display:flex; gap:10px; align-items:center; padding:10px 12px; background:#f8fbff; border:1px solid #cce0f4; border-radius:6px; margin-bottom:6px; }
+.selected-row .code { font-family:monospace; color:#1976d2; font-weight:600; font-size:11px; min-width:70px; }
+.selected-row .name { flex:1; font-size:12px; }
+.selected-row .price { font-weight:600; color:#0d4a8a; }
+.selected-row .remove { color:#c62828; cursor:pointer; padding:2px 6px; border-radius:4px; font-size:14px; }
+.tag { display:inline-block; padding:2px 8px; background:#1976d2; color:white; border-radius:10px; font-size:10px; margin-left:6px; }
+.tag.secondary { background:#fb8c00; }
+.discount-summary { background:#fff3e0; border-radius:6px; padding:10px 14px; margin-top:12px; font-size:12px; }
+.discount-summary .row { display:flex; justify-content:space-between; padding:2px 0; }
+.discount-summary .row strong { color:#0d4a8a; }
+.warn { background:#fff8e1; border-left:4px solid #ff9800; padding:10px 14px; border-radius:6px; font-size:12px; color:#5a6c7d; margin:10px 0; }
+.info { background:#e8f0fa; border-left:4px solid #1976d2; padding:10px 14px; border-radius:6px; font-size:12px; color:#5a6c7d; margin:10px 0; }
+button { padding:8px 14px; background:#1976d2; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; }
+button:hover { background:#1565c0; }
+button.secondary { background:#5a6c7d; }
+.empty { text-align:center; padding:30px; color:#7a8a99; font-size:13px; }
+</style>
+</head><body>
+<header>
+<h1>Surgery Fee Estimator</h1>
+<div class="sub">Generic-code-only · Multi-code support · Per-insurer MOU · Robotic-aware · Per Apr-26 audit</div>
+</header>
+<div class="container">
+
+<div class="info">
+<strong>Why this calculator only shows ~15 codes:</strong> Per the Apr-26 review and verified cross-referencing, the hospital billing actually uses GENERIC catch-all codes (Onco215/216/217/218 + GI075/053/054/018) for ALL GI/Onco surgeries — not the procedure-specific codes (Onco148 for Whipple's, etc.) which exist in the tariff book but are NEVER actually billed. Showing all 1,474 tariff codes would cause billing assistants to pick wrong-rate codes.
+</div>
+
+<div class="layout">
+
+<div class="panel">
+<h3>Inputs</h3>
+
+<label>Committed amount to patient (₹)</label>
+<input type="number" id="targetAmt" class="amt-input" placeholder="e.g. 250000" value="250000">
+
+<label>Surgery type</label>
+<select id="surgeryType">
+<option value="open">Open</option>
+<option value="lap">Laparoscopic</option>
+<option value="robotic">Robotic</option>
+</select>
+
+<label>Room / billing category</label>
+<select id="roomCat">
+<option value="std_daycare">Std Day Care</option>
+<option value="semi_pvt" selected>Semi-Private</option>
+<option value="single">Single Room</option>
+<option value="deluxe">Deluxe</option>
+<option value="exe_deluxe">Exec Deluxe</option>
+<option value="suite">Suite</option>
+<option value="presidential_suite">Presidential Suite</option>
+</select>
+
+<label>Payer / Insurer</label>
+<select id="insurer">
+<option value="0">CASH (no MOU)</option><option value="0">HDFC ERGO (full tariff per Dr Shah)</option><option value="0">ICICI Lombard (full tariff per Dr Shah)</option><option value="1">Paramount</option><option value="8">Star Health (variable — 0-18%)</option><option value="10">United India</option><option value="11">National Insurance</option><option value="13">New India</option><option value="18">Care Health</option><option value="20">Med Save / Iffco</option><option value="-1">Custom %</option>
+</select>
+
+<div id="customDiscWrap" style="display:none">
+<label>Custom MOU discount %</label>
+<input type="number" id="customDisc" value="10" min="0" max="50">
+</div>
+
+<div id="roboticInputs" style="display:none">
+<hr style="margin:14px 0;border:none;border-top:1px solid #eef1f5">
+<label>Robotic equipment charge (₹)</label>
+<input type="number" id="roboticEquip" value="57500" placeholder="Minor: 57,500 / Major: 1,32,300">
+<label>Robotic disposables total (₹)</label>
+<input type="number" id="roboticDisp" value="65000" placeholder="Hot Shears + Bipolar + Cadiere ≈ 65,000">
+<small style="color:#7a8a99;font-size:11px">For insurance robotic, these are deducted proportionally from prof fees per Apr-26 formula.</small>
+</div>
+
+<div class="target-display">
+<div class="label">Target net (after discount)</div>
+<div class="value" id="targetNet">₹2,50,000</div>
+</div>
+
+<div class="warn" style="margin-top:14px">
+<strong>CRS+HIPEC reminder:</strong> Not in the standard tariff book; never robotic. Use Onco216 + GI075/053 manually.
+</div>
+</div>
+
+<div class="panel">
+<h3>Available Codes <span style="font-weight:normal;color:#7a8a99;font-size:11px;margin-left:6px;">click to add</span></h3>
+
+<div class="info" style="margin:0 0 10px 0">
+Multi-code rule: <strong>Primary 100% · Secondary 50%</strong> (rule from billing_patterns.md)
+</div>
+
+<div class="code-list" id="codeList"></div>
+
+<h3 style="margin-top:18px">Selected Codes</h3>
+<div id="selectedList"></div>
+
+<div class="gauge">
+<div class="box box-target"><div class="label">Target</div><div class="value" id="g-target">—</div></div>
+<div class="box box-current"><div class="label">Current</div><div class="value" id="g-current">—</div></div>
+<div class="box box-gap" id="g-gap-box"><div class="label">Gap</div><div class="value" id="g-gap">—</div></div>
+</div>
+
+<div class="discount-summary" id="discountSummary"></div>
+<div id="roboticAdjustment" class="warn" style="display:none"></div>
+
+<div style="margin-top:14px;display:flex;gap:8px">
+<button onclick="suggestAddOns()">⚡ Suggest add-ons to close gap</button>
+<button class="secondary" onclick="clearAll()">Clear</button>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+const ALL_CODES = [{"code": "Onco217", "name": "GI Restoration (Minor)", "tier": "PRIMARY", "rates": {"std_daycare": 15750, "semi_pvt": 18120, "single": 19690, "deluxe": 22050, "exe_deluxe": 28350, "suite": 31500, "presidential_suite": 34650}}, {"code": "Onco218", "name": "GI Restoration (Major)", "tier": "PRIMARY", "rates": {"std_daycare": 26250, "semi_pvt": 30190, "single": 32820, "deluxe": 36750, "exe_deluxe": 47250, "suite": 52500, "presidential_suite": 57750}}, {"code": "Onco215", "name": "Minor Onco Resection", "tier": "PRIMARY", "rates": {"std_daycare": 26250, "semi_pvt": 30190, "single": 32820, "deluxe": 36750, "exe_deluxe": 47250, "suite": 52500, "presidential_suite": 57750}}, {"code": "Onco216", "name": "Major Onco Resection", "tier": "PRIMARY", "rates": {"std_daycare": 52500, "semi_pvt": 60380, "single": 65630, "deluxe": 73500, "exe_deluxe": 94500, "suite": 105000, "presidential_suite": 115500}}, {"code": "GI075", "name": "Resection and Anastomosis", "tier": "PRIMARY", "rates": {"std_daycare": 29750, "semi_pvt": 40570, "single": 54060, "deluxe": 59460, "exe_deluxe": 70260, "suite": 86460, "presidential_suite": 108070}}, {"code": "GI053", "name": "Ileostomy / Jejunostomy / Colostomy", "tier": "PRIMARY", "rates": {"std_daycare": 29750, "semi_pvt": 40570, "single": 54060, "deluxe": 59460, "exe_deluxe": 70260, "suite": 86460, "presidential_suite": 108070}}, {"code": "GI054", "name": "Ileostomy / jejunostomy / Colostomy closure", "tier": "PRIMARY", "rates": {"std_daycare": 29750, "semi_pvt": 40570, "single": 54060, "deluxe": 59460, "exe_deluxe": 70260, "suite": 86460, "presidential_suite": 108070}}, {"code": "GI018", "name": "Fundoplication Nissen's laparoscopic", "tier": "PRIMARY", "rates": {"std_daycare": 54060, "semi_pvt": 70260, "single": 86460, "deluxe": 95470, "exe_deluxe": 108070, "suite": 126090, "presidential_suite": 144090}}, {"code": "GI003", "name": "Diagnostic Laparoscopy & Biopsy", "tier": "PRIMARY", "rates": {"std_daycare": 21630, "semi_pvt": 29750, "single": 40570, "deluxe": 45050, "exe_deluxe": 54060, "suite": 70260, "presidential_suite": 86460}}, {"code": "GI065", "name": "Low Anterior resection with covering stoma", "tier": "SECONDARY", "rates": {"std_daycare": 54060, "semi_pvt": 70260, "single": 86460, "deluxe": 95470, "exe_deluxe": 108070, "suite": 126090, "presidential_suite": 144090}}, {"code": "GI080", "name": "Segmental colonic resection anastomosis with covering stoma", "tier": "SECONDARY", "rates": {"std_daycare": 54060, "semi_pvt": 70260, "single": 86460, "deluxe": 95470, "exe_deluxe": 108070, "suite": 126090, "presidential_suite": 144090}}, {"code": "GI085", "name": "Ultra-low anterior anastomosis with covering stoma", "tier": "SECONDARY", "rates": {"std_daycare": 54060, "semi_pvt": 70260, "single": 86460, "deluxe": 95470, "exe_deluxe": 108070, "suite": 126090, "presidential_suite": 144090}}, {"code": "GI040", "name": "Wedge resection of stomach", "tier": "SECONDARY", "rates": {"std_daycare": 29750, "semi_pvt": 40570, "single": 54060, "deluxe": 59460, "exe_deluxe": 70260, "suite": 86460, "presidential_suite": 108070}}, {"code": "GI001", "name": "Exploratory Laparotomy", "tier": "SECONDARY", "rates": {"std_daycare": 29750, "semi_pvt": 40570, "single": 54060, "deluxe": 59460, "exe_deluxe": 70260, "suite": 86460, "presidential_suite": 108070}}, {"code": "GI002", "name": "Diagnostic Laparoscopy", "tier": "SECONDARY", "rates": {"std_daycare": 18040, "semi_pvt": 21630, "single": 29750, "deluxe": 32440, "exe_deluxe": 40570, "suite": 54060, "presidential_suite": 70260}}];
+let selected = [];
+
+function fmt(n) {
+  if (n == null || isNaN(n)) return '—';
+  if (n >= 100000) return '₹' + (n/100000).toFixed(2) + ' L';
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+function getDiscount() {
+  const v = document.getElementById('insurer').value;
+  if (v === '-1') return parseFloat(document.getElementById('customDisc').value) || 0;
+  return parseFloat(v);
+}
+function getRoom() { return document.getElementById('roomCat').value; }
+function getRate(code) { return code.rates[getRoom()] || 0; }
+function getSurgeryType() { return document.getElementById('surgeryType').value; }
+
+function renderList() {
+  const room = getRoom();
+  document.getElementById('codeList').innerHTML = ALL_CODES.map(c => {
+    const isSel = selected.find(s => s.code === c.code);
+    return `<div class="codeRow tier-${c.tier} ${isSel?'selected':''}" onclick="toggleCode('${c.code}')">
+      <span class="code">${c.code}</span>
+      <span class="name">${c.name}<span class="tag-tier tag-${c.tier}">${c.tier}</span></span>
+      <span class="price">${fmt(c.rates[room])}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleCode(code) {
+  const ix = selected.findIndex(s => s.code === code);
+  if (ix >= 0) selected.splice(ix, 1);
+  else { const c = ALL_CODES.find(x => x.code === code); if (c) selected.push(c); }
+  renderAll();
+}
+
+function renderSelected() {
+  if (selected.length === 0) {
+    document.getElementById('selectedList').innerHTML = '<div class="empty">Pick a primary code first (gets 100% rate). Add secondary codes to inflate the bill — they get 50% factor per tariff book multi-code rule.</div>';
+    return;
+  }
+  document.getElementById('selectedList').innerHTML = selected.map((c, i) => {
+    const rate = getRate(c);
+    const factor = i === 0 ? 1.0 : 0.5;
+    const effective = rate * factor;
+    return `<div class="selected-row">
+      <span class="code">${c.code}</span>
+      <span class="name">${c.name}${i>0?'<span class="tag secondary">secondary 50%</span>':'<span class="tag">primary 100%</span>'}</span>
+      <span class="price">${fmt(effective)}</span>
+      <span class="remove" onclick="toggleCode('${c.code}')">×</span>
+    </div>`;
+  }).join('');
+}
+
+function computeGross() {
+  return selected.reduce((s, c, i) => s + getRate(c) * (i === 0 ? 1.0 : 0.5), 0);
+}
+
+function renderGauge() {
+  const target = parseFloat(document.getElementById('targetAmt').value) || 0;
+  const gross = computeGross();
+  const disc = getDiscount();
+  const net = gross * (1 - disc/100);
+  const gap = target - net;
+
+  document.getElementById('g-target').textContent = fmt(target);
+  document.getElementById('g-current').textContent = fmt(net);
+  document.getElementById('g-gap').textContent = (gap > 0 ? '+' : '') + fmt(gap);
+  document.getElementById('targetNet').textContent = fmt(target);
+
+  const box = document.getElementById('g-gap-box');
+  box.classList.toggle('ok', Math.abs(gap) < target * 0.05);
+
+  document.getElementById('discountSummary').innerHTML = `
+    <div class="row"><span>Gross (sum of codes — primary 100% + secondaries 50%)</span><strong>${fmt(gross)}</strong></div>
+    <div class="row"><span>MOU discount (${disc}%)</span><strong>-${fmt(gross*disc/100)}</strong></div>
+    <div class="row"><span>Net to bill (Invasive Procedures line)</span><strong>${fmt(net)}</strong></div>
+    <div class="row" style="margin-top:6px;border-top:1px solid #ffe0b2;padding-top:6px"><span>Target</span><strong>${fmt(target)}</strong></div>
+    <div class="row"><span>Gap (target − net)</span><strong style="color:${gap>0?'#c62828':'#2e7d32'}">${fmt(gap)}</strong></div>
+  `;
+
+  const robotic = getSurgeryType() === 'robotic';
+  document.getElementById('roboticInputs').style.display = robotic ? 'block' : 'none';
+  if (robotic && net > 0) {
+    const eq = parseFloat(document.getElementById('roboticEquip').value) || 0;
+    const dp = parseFloat(document.getElementById('roboticDisp').value) || 0;
+    const totalAdj = eq + dp;
+    const isInsurance = disc > 0;
+    if (isInsurance) {
+      document.getElementById('roboticAdjustment').style.display = 'block';
+      document.getElementById('roboticAdjustment').innerHTML = 
+        `<strong>Robotic insurance adjustment:</strong> Total to deduct from professional fees = ${fmt(totalAdj)}.<br>
+         Per Apr-26 formula: deducted proportionally from Surgeon + Asst + Anaes + OT before billing. The code total above represents the SURGEON FEE BEFORE adjustment. Doctorwise post-adjustment fee will be lower.`;
+    } else {
+      document.getElementById('roboticAdjustment').style.display = 'block';
+      document.getElementById('roboticAdjustment').innerHTML = 
+        `<strong>Cash robotic:</strong> Equipment ${fmt(eq)} + Disposables ${fmt(dp)} = ${fmt(totalAdj)} are billed to patient SEPARATELY. Bill total ≈ Code net (${fmt(net)}) + Equipment + Disposables + OT consumables + pharmacy.`;
+    }
+  } else {
+    document.getElementById('roboticAdjustment').style.display = 'none';
+  }
+}
+
+function suggestAddOns() {
+  if (selected.length === 0) { alert('Pick a primary procedure first.'); return; }
+  const target = parseFloat(document.getElementById('targetAmt').value) || 0;
+  const disc = getDiscount();
+  const grossNeeded = target / (1 - disc/100);
+  const grossCurrent = computeGross();
+  let gap = grossNeeded - grossCurrent;
+  if (gap <= 1000) { alert('Already at or above target.'); return; }
+
+  const candidates = ALL_CODES
+    .filter(c => !selected.find(s => s.code === c.code))
+    .map(c => ({...c, effective: getRate(c) * 0.5}))
+    .filter(c => c.effective > 0)
+    .sort((a, b) => Math.abs(a.effective - gap) - Math.abs(b.effective - gap));
+
+  let suggestions = [];
+  let remaining = gap;
+  for (const c of candidates) {
+    if (c.effective <= remaining + 5000 && suggestions.length < 3) {
+      suggestions.push(c);
+      remaining -= c.effective;
+    }
+  }
+  if (suggestions.length === 0) { alert('No good add-on found.'); return; }
+  suggestions.forEach(s => selected.push(ALL_CODES.find(c => c.code === s.code)));
+  renderAll();
+}
+
+function clearAll() { selected = []; renderAll(); }
+
+function renderAll() { renderList(); renderSelected(); renderGauge(); }
+
+document.getElementById('insurer').addEventListener('change', () => {
+  document.getElementById('customDiscWrap').style.display = 
+    document.getElementById('insurer').value === '-1' ? 'block' : 'none';
+  renderGauge();
+});
+['targetAmt','customDisc','roomCat','surgeryType','roboticEquip','roboticDisp']
+  .forEach(id => document.getElementById(id).addEventListener('input', renderAll));
+renderAll();
+</script>
+</body></html>
