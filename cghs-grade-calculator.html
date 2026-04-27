@@ -1,0 +1,56 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CGHS Grade Calculator</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;background:#f4f6f8;color:#222}
+header{background:linear-gradient(135deg,#0d4a8a 0%,#1976d2 100%);color:#fff;padding:24px 32px}header h1{margin:0 0 4px 0;font-size:22px}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.panel h3{margin:0 0 12px 0;font-size:14px;color:#0d4a8a}
+label{display:block;font-size:11px;color:#5a6c7d;margin:10px 0 4px 0;text-transform:uppercase}
+input,select{width:100%;padding:8px 10px;border:1px solid #cdd5dd;border-radius:6px;font-size:13px}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eef1f5}
+.result-row strong{color:#0d4a8a}
+.total-row{font-size:18px;font-weight:600;background:#e3f2fd;padding:12px;border-radius:6px;margin-top:14px;color:#0d4a8a}
+.callout{background:#e8f0fa;border-left:4px solid #1976d2;padding:10px 14px;border-radius:6px;font-size:12px;color:#5a6c7d;margin:10px 0}
+table{width:100%;border-collapse:collapse}th{background:#f0f3f6;padding:8px;font-size:11px;text-transform:uppercase;color:#5a6c7d}td{padding:6px 8px;font-size:12px;border-bottom:1px solid #eef1f5}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+</style></head>
+<body><header><h1>CGHS Multi-Procedure Calculator</h1>
+<div style="opacity:0.85;font-size:13px">Primary 100% + secondary 50% per CGHS multi-code rule</div></header>
+<div class="container"><div class="layout">
+
+<div class="panel"><h3>Add Procedures</h3>
+<label>Primary Procedure (100%)</label>
+<select id="primary"><option value="5750">Grade I — Incision & Drainage — ₹5,750</option><option value="14375">Grade II — Diagnostic Lap — ₹14,375</option><option value="23000">Grade III — Hernia Repair — ₹23,000</option><option value="28750">Grade IV — Anterior Resection — ₹28,750</option><option value="28750">Grade IV — Colo-Rectal Anastomosis — ₹28,750</option><option value="40250">Grade V — Major Resection — ₹40,250</option><option value="51750">Grade VI — Retroperitoneal Lymphadenectomy — ₹51,750</option><option value="57500">Grade VI — Extensive — ₹57,500</option></select>
+
+<label>Secondary Procedure 1 (50%)</label>
+<select id="sec1"><option value="0">None</option><option value="5750">Grade I — Incision & Drainage — ₹5,750</option><option value="14375">Grade II — Diagnostic Lap — ₹14,375</option><option value="23000">Grade III — Hernia Repair — ₹23,000</option><option value="28750">Grade IV — Anterior Resection — ₹28,750</option><option value="28750">Grade IV — Colo-Rectal Anastomosis — ₹28,750</option><option value="40250">Grade V — Major Resection — ₹40,250</option><option value="51750">Grade VI — Retroperitoneal Lymphadenectomy — ₹51,750</option><option value="57500">Grade VI — Extensive — ₹57,500</option></select>
+
+<label>Secondary Procedure 2 (50%)</label>
+<select id="sec2"><option value="0">None</option><option value="5750">Grade I — Incision & Drainage — ₹5,750</option><option value="14375">Grade II — Diagnostic Lap — ₹14,375</option><option value="23000">Grade III — Hernia Repair — ₹23,000</option><option value="28750">Grade IV — Anterior Resection — ₹28,750</option><option value="28750">Grade IV — Colo-Rectal Anastomosis — ₹28,750</option><option value="40250">Grade V — Major Resection — ₹40,250</option><option value="51750">Grade VI — Retroperitoneal Lymphadenectomy — ₹51,750</option><option value="57500">Grade VI — Extensive — ₹57,500</option></select>
+
+<label>Secondary Procedure 3 (50%)</label>
+<select id="sec3"><option value="0">None</option><option value="5750">Grade I — Incision & Drainage — ₹5,750</option><option value="14375">Grade II — Diagnostic Lap — ₹14,375</option><option value="23000">Grade III — Hernia Repair — ₹23,000</option><option value="28750">Grade IV — Anterior Resection — ₹28,750</option><option value="28750">Grade IV — Colo-Rectal Anastomosis — ₹28,750</option><option value="40250">Grade V — Major Resection — ₹40,250</option><option value="51750">Grade VI — Retroperitoneal Lymphadenectomy — ₹51,750</option><option value="57500">Grade VI — Extensive — ₹57,500</option></select>
+</div>
+
+<div class="panel"><h3>Total CGHS Surgeon Fee</h3>
+<div class="callout">Per tariff book CGHS rules: primary procedure 100%, each secondary 50%. OT charges and anaesthesia bundled into "Non Invasive Procedure" line in CGHS bills.</div>
+<div id="results"></div>
+</div>
+
+</div></div>
+<script>
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function calc(){
+  const p=parseFloat(document.getElementById('primary').value)||0;
+  const s1=parseFloat(document.getElementById('sec1').value)||0;
+  const s2=parseFloat(document.getElementById('sec2').value)||0;
+  const s3=parseFloat(document.getElementById('sec3').value)||0;
+  const total=p+(s1+s2+s3)*0.5;
+  let html=`<div class="result-row"><span>Primary (100%)</span><strong>${fmt(p)}</strong></div>`;
+  if(s1) html+=`<div class="result-row"><span>Secondary 1 (50%)</span><strong>${fmt(s1*0.5)}</strong></div>`;
+  if(s2) html+=`<div class="result-row"><span>Secondary 2 (50%)</span><strong>${fmt(s2*0.5)}</strong></div>`;
+  if(s3) html+=`<div class="result-row"><span>Secondary 3 (50%)</span><strong>${fmt(s3*0.5)}</strong></div>`;
+  html+=`<div class="total-row">CGHS Surgeon Fee Total: ${fmt(total)}</div>`;
+  document.getElementById('results').innerHTML=html;
+}
+['primary','sec1','sec2','sec3'].forEach(i=>document.getElementById(i).addEventListener('input',calc));calc();
+</script></body></html>
