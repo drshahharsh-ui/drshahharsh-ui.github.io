@@ -1,0 +1,55 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Anaes/Asst Reconciler</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;background:#f4f6f8;color:#222}
+header{background:linear-gradient(135deg,#0d4a8a 0%,#1976d2 100%);color:#fff;padding:24px 32px}header h1{margin:0 0 4px 0;font-size:22px}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.panel h3{margin:0 0 12px 0;font-size:14px;color:#0d4a8a}
+label{display:block;font-size:11px;color:#5a6c7d;margin:10px 0 4px 0;text-transform:uppercase}
+input,select{width:100%;padding:8px 10px;border:1px solid #cdd5dd;border-radius:6px;font-size:13px;background:#fff}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eef1f5}
+.result-row strong{color:#0d4a8a}
+.total-row{font-size:18px;font-weight:600;background:#e3f2fd;padding:12px;border-radius:6px;margin-top:14px;color:#0d4a8a}
+.callout{background:#e8f0fa;border-left:4px solid #1976d2;padding:10px 14px;border-radius:6px;font-size:12px;color:#5a6c7d;margin:10px 0}
+</style></head>
+<body><header><h1>Anaesthesia & Assistant Fee Reconciler</h1>
+<div style="opacity:0.85;font-size:13px">Per tariff book: Anaes = 20%, Asst = 25% of Surgeon fee. Verify any deviation.</div></header>
+<div class="container"><div class="layout">
+
+<div class="panel"><h3>Inputs</h3>
+<label>Surgeon Fee (Invasive Procedures, ₹)</label>
+<input type="number" id="surg" value="65630">
+
+<label>Actual Anaesthesia Fee on bill (₹)</label>
+<input type="number" id="anaes" value="">
+
+<label>Actual Assistant Surgeon Fee on bill (₹)</label>
+<input type="number" id="asst" value="">
+</div>
+
+<div class="panel"><h3>Expected vs Actual</h3>
+<div id="results"></div>
+</div>
+
+</div></div>
+<script>
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function calc(){
+  const s=parseFloat(document.getElementById('surg').value)||0;
+  const a=parseFloat(document.getElementById('anaes').value)||0;
+  const ass=parseFloat(document.getElementById('asst').value)||0;
+  const expAnaes=s*0.20;
+  const expAsst=s*0.25;
+  const da=a-expAnaes, dass=ass-expAsst;
+  
+  const html=`
+    <div class="result-row"><span>Expected Anaesthesia (20%)</span><strong>${fmt(expAnaes)}</strong></div>
+    ${a?`<div class="result-row"><span>Actual</span><strong>${fmt(a)} (${(da>0?'+':'')+fmt(da)})</strong></div>`:''}
+    <div class="result-row"><span>Expected Assistant (25%)</span><strong>${fmt(expAsst)}</strong></div>
+    ${ass?`<div class="result-row"><span>Actual</span><strong>${fmt(ass)} (${(dass>0?'+':'')+fmt(dass)})</strong></div>`:''}
+    <div class="total-row">Expected Total Professional Fees: ${fmt(s+expAnaes+expAsst)}</div>
+    <div style="margin-top:10px;padding:10px;background:#fff3e0;border-radius:6px;font-size:12px">If actual deviates >15% from expected, may indicate: (1) different anaesthetist contract, (2) discounted rate due to MOU, (3) fee transfer arrangement, (4) calculation error worth flagging.</div>
+  `;
+  document.getElementById('results').innerHTML=html;
+}
+['surg','anaes','asst'].forEach(i=>document.getElementById(i).addEventListener('input',calc));calc();
+</script></body></html>
