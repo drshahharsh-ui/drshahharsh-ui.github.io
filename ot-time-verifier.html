@@ -1,0 +1,54 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>OT Time Charge Verifier</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;background:#f4f6f8;color:#222}
+header{background:linear-gradient(135deg,#0d4a8a 0%,#1976d2 100%);color:#fff;padding:24px 32px}header h1{margin:0 0 4px 0;font-size:22px}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.panel h3{margin:0 0 12px 0;font-size:14px;color:#0d4a8a}
+label{display:block;font-size:11px;color:#5a6c7d;margin:10px 0 4px 0;text-transform:uppercase}
+input,select{width:100%;padding:8px 10px;border:1px solid #cdd5dd;border-radius:6px;font-size:13px}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eef1f5}
+.result-row strong{color:#0d4a8a}
+.total-row{font-size:18px;font-weight:600;background:#e3f2fd;padding:12px;border-radius:6px;margin-top:14px;color:#0d4a8a}
+.callout{background:#e8f0fa;border-left:4px solid #1976d2;padding:10px 14px;border-radius:6px;font-size:12px;color:#5a6c7d;margin:10px 0}
+table{width:100%;border-collapse:collapse}th{background:#f0f3f6;padding:8px;font-size:11px;text-transform:uppercase;color:#5a6c7d}td{padding:6px 8px;font-size:12px;border-bottom:1px solid #eef1f5}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+</style></head>
+<body><header><h1>OT Time Charge Verifier</h1>
+<div style="opacity:0.85;font-size:13px">Per tariff book: OT = max(75% surgeon fee, hourly × time)</div></header>
+<div class="container"><div class="layout">
+
+<div class="panel"><h3>Inputs</h3>
+<label>Surgeon Fee (₹)</label><input type="number" id="sf" value="65630">
+<label>OT Time (minutes)</label><input type="number" id="mins" value="240">
+<label>Room Category</label>
+<select id="room"><option value="4500">Std Daycare (₹4500/hr)</option><option value="5600">Semi Pvt (₹5600/hr)</option><option value="6150">Single (₹6150/hr)</option><option value="6700">Deluxe (₹6700/hr)</option><option value="7700">Exe Deluxe (₹7700/hr)</option><option value="9250">Suite (₹9250/hr)</option></select>
+<label>Emergency? (7pm-7am)</label>
+<select id="em"><option value="1">No</option><option value="0.85">Yes (85% surcharge)</option></select>
+</div>
+
+<div class="panel"><h3>Calculation</h3>
+<div id="results"></div>
+</div>
+
+</div></div>
+<script>
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function calc(){
+  const sf=parseFloat(document.getElementById('sf').value)||0;
+  const mins=parseFloat(document.getElementById('mins').value)||0;
+  const rate=parseFloat(document.getElementById('room').value)||0;
+  const em=parseFloat(document.getElementById('em').value)||1;
+  const pct75=sf*0.75;
+  const hourly=(mins/60)*rate;
+  const base=Math.max(pct75, hourly);
+  const final=em<1?base*(1+(1-em)):base;
+  document.getElementById('results').innerHTML=`
+    <div class="result-row"><span>75% of Surgeon fee</span><strong>${fmt(pct75)}</strong></div>
+    <div class="result-row"><span>Hourly × ${(mins/60).toFixed(2)}h</span><strong>${fmt(hourly)}</strong></div>
+    <div class="result-row"><span>Higher of the two</span><strong>${fmt(base)}</strong></div>
+    ${em<1?`<div class="result-row"><span>Emergency surcharge (+${((1-em)*100).toFixed(0)}%)</span><strong>+${fmt(final-base)}</strong></div>`:''}
+    <div class="total-row">Expected OT Charge: ${fmt(final)}</div>
+  `;
+}
+['sf','mins','room','em'].forEach(i=>document.getElementById(i).addEventListener('input',calc));calc();
+</script></body></html>
