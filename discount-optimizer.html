@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Doctor-Patient Discount Optimizer</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;background:#f4f6f8;color:#222}
+header{background:linear-gradient(135deg,#0d4a8a 0%,#1976d2 100%);color:#fff;padding:24px 32px}header h1{margin:0 0 4px 0;font-size:22px}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.panel h3{margin:0 0 12px 0;font-size:14px;color:#0d4a8a}
+label{display:block;font-size:11px;color:#5a6c7d;margin:10px 0 4px 0;text-transform:uppercase}
+input,select{width:100%;padding:8px 10px;border:1px solid #cdd5dd;border-radius:6px;font-size:13px}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eef1f5}
+.result-row strong{color:#0d4a8a}
+.total-row{font-size:18px;font-weight:600;background:#e3f2fd;padding:12px;border-radius:6px;margin-top:14px;color:#0d4a8a}
+.callout{background:#e8f0fa;border-left:4px solid #1976d2;padding:10px 14px;border-radius:6px;font-size:12px;color:#5a6c7d;margin:10px 0}
+table{width:100%;border-collapse:collapse}th{background:#f0f3f6;padding:8px;font-size:11px;text-transform:uppercase;color:#5a6c7d}td{padding:6px 8px;font-size:12px;border-bottom:1px solid #eef1f5}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+</style></head>
+<body><header><h1>Doctor-Patient Discount Optimizer</h1>
+<div style="opacity:0.85;font-size:13px">When you give a discount, what's the optimal code mix to maintain margin while delivering committed amount?</div></header>
+<div class="container"><div class="layout">
+
+<div class="panel"><h3>Inputs</h3>
+<label>Originally quoted total (₹)</label><input type="number" id="orig" value="450000">
+<label>Discounted committed amount (₹)</label><input type="number" id="commit" value="350000">
+<label>Original Surgeon Fee (₹)</label><input type="number" id="osurg" value="65630">
+<label>Original OT charges (₹)</label><input type="number" id="oot" value="49220">
+<label>Original Pharmacy + consumables (₹)</label><input type="number" id="opharm" value="180000">
+<label>Original other (room, etc., ₹)</label><input type="number" id="ooth" value="155150">
+</div>
+
+<div class="panel"><h3>Optimal Discount Distribution</h3>
+<div class="callout">Logic: protect hospital procurement costs (pharmacy/consumables) — cut surgeon fee + OT charges first, since those have margin. Pharmacy at full procurement cost can't be discounted without loss.</div>
+<div id="results"></div>
+</div>
+
+</div></div>
+<script>
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function calc(){
+  const orig=parseFloat(document.getElementById('orig').value)||0;
+  const commit=parseFloat(document.getElementById('commit').value)||0;
+  const surg=parseFloat(document.getElementById('osurg').value)||0;
+  const ot=parseFloat(document.getElementById('oot').value)||0;
+  const pharm=parseFloat(document.getElementById('opharm').value)||0;
+  const oth=parseFloat(document.getElementById('ooth').value)||0;
+  
+  const cut=orig-commit;
+  // Strategy: don't cut pharmacy at all (procurement). Cut surgeon + OT proportionally.
+  const cutPool=surg+ot+oth;
+  const cutSurg=cutPool>0?cut*(surg/cutPool):0;
+  const cutOT=cutPool>0?cut*(ot/cutPool):0;
+  const cutOth=cutPool>0?cut*(oth/cutPool):0;
+  
+  document.getElementById('results').innerHTML=`
+    <div class="result-row"><span>Total cut needed</span><strong>${fmt(cut)}</strong></div>
+    <div class="result-row"><span>Pharmacy/Consumables (UNCHANGED — procurement cost)</span><strong>${fmt(pharm)}</strong></div>
+    <div class="result-row"><span>Surgeon fee: ${fmt(surg)} − ${fmt(cutSurg)}</span><strong>${fmt(surg-cutSurg)}</strong></div>
+    <div class="result-row"><span>OT charges: ${fmt(ot)} − ${fmt(cutOT)}</span><strong>${fmt(ot-cutOT)}</strong></div>
+    <div class="result-row"><span>Other: ${fmt(oth)} − ${fmt(cutOth)}</span><strong>${fmt(oth-cutOth)}</strong></div>
+    <div class="total-row">New billed total: ${fmt(commit)}</div>
+    <div style="font-size:12px;color:#7a8a99;margin-top:8px">Surgeon fee absorbs ${((cutSurg/cut)*100).toFixed(0)}% of the discount, OT ${((cutOT/cut)*100).toFixed(0)}%, other ${((cutOth/cut)*100).toFixed(0)}%. Pharmacy remains untouched.</div>
+  `;
+}
+['orig','commit','osurg','oot','opharm','ooth'].forEach(i=>document.getElementById(i).addEventListener('input',calc));calc();
+</script></body></html>
