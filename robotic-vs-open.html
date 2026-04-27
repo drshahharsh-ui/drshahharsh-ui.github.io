@@ -1,0 +1,88 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Robotic vs Open</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;background:#f4f6f8;color:#222}
+header{background:linear-gradient(135deg,#0d4a8a 0%,#1976d2 100%);color:#fff;padding:24px 32px}header h1{margin:0 0 4px 0;font-size:22px}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.panel h3{margin:0 0 12px 0;font-size:14px;color:#0d4a8a}
+label{display:block;font-size:11px;color:#5a6c7d;margin:10px 0 4px 0;text-transform:uppercase}
+input,select{width:100%;padding:8px 10px;border:1px solid #cdd5dd;border-radius:6px;font-size:13px;background:#fff}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eef1f5}
+.result-row strong{color:#0d4a8a}
+.total-row{font-size:18px;font-weight:600;background:#e3f2fd;padding:12px;border-radius:6px;margin-top:14px;color:#0d4a8a}
+.callout{background:#e8f0fa;border-left:4px solid #1976d2;padding:10px 14px;border-radius:6px;font-size:12px;color:#5a6c7d;margin:10px 0}
+</style></head>
+<body><header><h1>Robotic vs Open Decision Tool</h1>
+<div style="opacity:0.85;font-size:13px">Net surgeon take-home: robotic (with adjustment) vs open same procedure</div></header>
+<div class="container"><div class="layout">
+
+<div class="panel"><h3>Inputs</h3>
+<label>Surgeon fee for procedure (gross, ₹)</label>
+<input type="number" id="surg" value="65630">
+
+<label>Asst surgeon fee (gross, ₹)</label>
+<input type="number" id="asst" value="16410">
+
+<label>Anaesthetist fee (gross, ₹)</label>
+<input type="number" id="anaes" value="13130">
+
+<label>OT charges (gross, ₹)</label>
+<input type="number" id="ot" value="49220">
+
+<label>Equipment charge (₹)</label>
+<input type="number" id="eq" value="57500">
+
+<label>Robotic disposables (₹)</label>
+<input type="number" id="disp" value="65000">
+
+<label>Payer</label>
+<select id="payer"><option>CASH</option><option>INSURANCE</option></select>
+</div>
+
+<div class="panel"><h3>Comparison</h3>
+<div class="callout">Insurance robotic: equipment + disposables proportionally deducted from 4 prof fees. Cash robotic: equipment + disposables billed to patient separately.</div>
+<div id="results"></div>
+</div>
+
+</div></div>
+<script>
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function calc(){
+  const s=parseFloat(document.getElementById('surg').value)||0;
+  const a=parseFloat(document.getElementById('asst').value)||0;
+  const an=parseFloat(document.getElementById('anaes').value)||0;
+  const ot=parseFloat(document.getElementById('ot').value)||0;
+  const eq=parseFloat(document.getElementById('eq').value)||0;
+  const dp=parseFloat(document.getElementById('disp').value)||0;
+  const payer=document.getElementById('payer').value;
+  
+  const totAdj=eq+dp;
+  const sumProf=s+a+an+ot;
+  
+  let openSurg=s, robSurg=s, openAsst=a, robAsst=a, openAnaes=an, robAnaes=an, openOT=ot, robOT=ot;
+  if(payer==='INSURANCE'){
+    // Robotic adjustment: each prof fee reduced proportionally
+    robSurg=s-(s/sumProf)*totAdj;
+    robAsst=a-(a/sumProf)*totAdj;
+    robAnaes=an-(an/sumProf)*totAdj;
+    robOT=ot-(ot/sumProf)*totAdj;
+  }
+  
+  const html=`
+    <h4 style="margin-top:0;color:#0d4a8a">OPEN surgery</h4>
+    <div class="result-row"><span>Surgeon</span><strong>${fmt(openSurg)}</strong></div>
+    <div class="result-row"><span>Hospital (no equipment)</span><strong>—</strong></div>
+    <div class="total-row" style="background:#e8f5e9;color:#2e7d32">Surgeon take-home: ${fmt(openSurg)}</div>
+    
+    <h4 style="margin-top:20px;color:#0d4a8a">ROBOTIC surgery</h4>
+    <div class="result-row"><span>Surgeon (gross)</span><strong>${fmt(s)}</strong></div>
+    ${payer==='INSURANCE' ? `<div class="result-row"><span>− proportional adjustment</span><strong>-${fmt(s-robSurg)}</strong></div>` : '<div class="result-row"><span>Equipment + Disposables billed separately</span><strong>+${fmt(totAdj)}</strong></div>'}
+    <div class="total-row" style="background:#fff8e1;color:#f57f17">Surgeon take-home: ${fmt(robSurg)}</div>
+    
+    <div style="margin-top:14px;padding:10px;background:${payer==='INSURANCE'?'#ffebee':'#e3f2fd'};border-radius:6px;font-size:13px">
+      ${payer==='INSURANCE' ? '<strong>Insurance robotic loses '+fmt(s-robSurg)+'</strong> from your fee. Open same procedure pays full ₹'+s.toLocaleString('en-IN')+'.' : '<strong>Cash robotic: surgeon fee unchanged</strong>. Equipment + disposables ('+fmt(totAdj)+') billed to patient. Hospital wins on equipment.'}
+    </div>
+  `;
+  document.getElementById('results').innerHTML=html;
+}
+['surg','asst','anaes','ot','eq','disp','payer'].forEach(i=>document.getElementById(i).addEventListener('input',calc));calc();
+</script></body></html>
